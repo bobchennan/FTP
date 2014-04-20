@@ -53,16 +53,27 @@ TYPE - set transfer type\n\
 USER - send username\n");
             next(next);
         }
-        else if(command.substr(0,4)=='STOR')
+        else if(command.substr(0,4)=='STOR'){
+            client.write(command+'\n');
             fs.readFile(command.substr(5),function(err,data){
                 if(err)console.log('read file error');
                 else datalink.end(data);
                 next(next);
             });
+        }
         else client.write(command+'\n');
         last_command=command;
     });
 }
+
+datalink.on('data',function(data){
+    if(last_command.substr(0,4)=='LIST')console.log(data.toString());
+    if(last_command.substr(0,4)=='RETR')
+        fs.writeFile(last_command.substr(5),data,function(err){
+            if(err)console.log('write file error');
+            else handle(handle);
+        });
+});
 
 client.on('data', function(data) {
     data=data.toString();
@@ -80,6 +91,7 @@ client.on('data', function(data) {
     else if(str[0]=='221')
         process.exit(0);
     else if(str[0]=='227'){
+        datalink.destroy();
         var infor=data.substr(data.indexOf('(')+1,data.lastIndexOf(')')-data.indexOf('(')-1);
         //console.log(infor);
         infor2=infor.split(',');
@@ -87,13 +99,6 @@ client.on('data', function(data) {
         port=parseInt(infor2[4])*256+parseInt(infor2[5]);
         datalink.connect(port,ip,function(){
             handle(handle);
-        });
-        datalink.on('data',function(data){
-            if(last_command.substr(0,4)=='LIST')console.log(data.toString());
-            if(last_command.substr(0,4)=='RETR')
-                fs.writeFile(last_command.substr(5),data,function(err){
-                    if(err)console.log('write file error');
-                });
         });
     }
     else handle(handle);

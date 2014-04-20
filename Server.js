@@ -335,7 +335,7 @@ commands = exports.commands = {
                 value += chunk;
             })
             dataSocket.on('end', function () {
-                fs.writeFile(file, value, function (error) {
+                fs.writeFile(path.join(dir,file), value, function (error) {
                     if (error) socket.reply(501, 'Read fail');
                 });
             });
